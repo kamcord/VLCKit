@@ -17,7 +17,7 @@ SCARY=yes
 TVOS=no
 BITCODE=no
 
-TESTEDHASH=e9878b8b
+TESTEDHASH=95e0512
 
 usage()
 {
@@ -156,11 +156,11 @@ spushd MobileVLCKit/ImportedSources
 
 if [ "$NONETWORK" != "yes" ]; then
 if ! [ -e vlc ]; then
-git clone git://git.videolan.org/vlc.git vlc
+git clone git@github.com:kamcord/vlc.git vlc
 info "Applying patches to vlc.git"
 cd vlc
 git checkout -B localBranch ${TESTEDHASH}
-git branch --set-upstream-to=origin/master localBranch
+git branch --set-upstream-to=origin/expose-metadata-extras localBranch
 git am ../../patches/*.patch
 if [ $? -ne 0 ]; then
 git am --abort
