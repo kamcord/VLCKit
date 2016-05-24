@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   s.platform  = :ios
   s.authors   = { 'Kamcord' => 'support@kamcord.com' }
   s.source    = {
-    :http => "https://github.com/kamcord/VLCKit/releases/download/v3.0.0-pre3-test/MobileVLCKit-3.0.0-pre3-metadata.zip"
+    :http => "https://github.com/kamcord/VLCKit/releases/download/3.0.0-pre3-metadata/MobileVLCKit-3.0.0-pre3.zip"
   }
   s.ios.vendored_frameworks = 'MobileVLCKit-binary/MobileVLCKit.framework'
   s.ios.deployment_target = '8.0'
