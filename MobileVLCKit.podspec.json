@@ -16,9 +16,9 @@
 	    "Kamcord" : "support@kamcord.com"
 	}
     ],
-//  "source": {
-//    "http": "http://download.videolan.org/pub/cocoapods/MobileVLCKit-2.2.2.zip"
-//  },
+    "source": {
+	"http": "https://github.com/kamcord/VLCKit/releases/download/v3.0.0-pre3-test/MobileVLCKit-3.0.0-pre3-metadata.zip"
+    },
     "ios": {
 	"vendored_frameworks": "MobileVLCKit-binary/MobileVLCKit.framework"
     },
