@@ -113,6 +113,13 @@ typedef NS_ENUM(NSInteger, VLCMediaState) {
  */
 
 - (void)mediaDidFinishParsing:(VLCMedia *)aMedia;
+
+/**
+ * Delegate method called whenever the media's meta data "extras" were changed for
+ * whatever reason. This can include being set from a source.
+ */
+
+- (void)mediaMetaDataExtrasDidChange:(VLCMedia *)aMedia;
 @end
 
 /**
@@ -264,6 +271,11 @@ typedef NS_ENUM(unsigned, VLCMediaParseStatus)
  * \see dictionary keys above
  */
 - (NSString *)metadataForKey:(NSString *)key;
+
+/**
+ * get meta extra property for string
+ */
+- (NSString *)metadataExtraForString:(NSString *)str;
 
 /**
  * set meta property for key
