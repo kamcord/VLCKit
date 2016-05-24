@@ -17,7 +17,7 @@ SCARY=yes
 TVOS=no
 BITCODE=no
 
-TESTEDHASH=95e0512
+TESTEDHASH=465d3e9f61c1ebcf784649a3e434ead72d6d7d1d
 
 usage()
 {
@@ -160,7 +160,7 @@ git clone git@github.com:kamcord/vlc.git vlc
 info "Applying patches to vlc.git"
 cd vlc
 git checkout -B localBranch ${TESTEDHASH}
-git branch --set-upstream-to=origin/expose-metadata-extras localBranch
+#git branch --set-upstream-to=origin/expose-metadata-extras localBranch
 git am ../../patches/*.patch
 if [ $? -ne 0 ]; then
 git am --abort
@@ -170,7 +170,7 @@ fi
 cd ..
 else
 cd vlc
-git pull --rebase
+# git pull --rebase
 git reset --hard ${TESTEDHASH}
 git am ../../patches/*.patch
 cd ..

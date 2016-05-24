@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name      = 'MobileVLCKit'
-  s.version   = '3.0.0'
+  s.version   = '3.0.0-pre3'
   s.summary   = "MobileVLCKit (Used by Kamcord)"
   s.homepage  = 'https://code.videolan.org/videolan/VLCKit'
   s.license   = {
