@@ -17,7 +17,7 @@
 	}
     ],
     "source": {
-	"http": "https://github.com/kamcord/VLCKit/releases/download/v3.0.0-pre3-test/MobileVLCKit-3.0.0-pre3-metadata.zip"
+	"http": "http://github.com/kamcord/VLCKit/releases/download/v3.0.0-pre3-test/MobileVLCKit-3.0.0-pre3-metadata.zip"
     },
     "ios": {
 	"vendored_frameworks": "MobileVLCKit-binary/MobileVLCKit.framework"
