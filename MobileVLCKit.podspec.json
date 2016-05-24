@@ -31,7 +31,7 @@
 	"CFNetwork",
 	"AudioToolbox",
 	"OpenGLES",
-	"CoreGraphics"
+	"CoreGraphics",
 	"VideoToolbox"
     ],
     "libraries": [
