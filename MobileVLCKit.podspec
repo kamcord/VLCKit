@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.source    = {
     :http => "https://github.com/kamcord/VLCKit/releases/download/v3.0.0-pre3-test/MobileVLCKit-3.0.0-pre3-metadata.zip"
   }
-  s.ios.vendored_framework = 'MobileVLCKit-binary/MobileVLCKit.framework'
+  s.ios.vendored_frameworks = 'MobileVLCKit-binary/MobileVLCKit.framework'
   s.ios.deployment_target = '8.0'
   s.frameworks = 'QuartzCore', 'CoreText', 'AVFoundation', 'Security', 'CFNetwork', 'AudioToolbox', 'OpenGLES', 'CoreGraphics', 'VideoToolbox', 'CoreMedia'
   s.libraries = 'stdc++', 'stdc++.6', 'xml2', 'z', 'bz2', 'iconv'
