@@ -1,22 +1,21 @@
 Pod::Spec.new do |s|
   s.name      = 'MobileVLCKit'
   s.version   = '2.2.2'
-  s.summary   = "MobileVLCKit is an Objective-C wrapper for libvlc's external interface on iOS."
+  s.summary   = "MobileVLCKit (Used by Kamcord)"
   s.homepage  = 'https://code.videolan.org/videolan/VLCKit'
   s.license   = {
     :type => 'LGPL v2.1', :file => 'MobileVLCKit-binary/COPYING.txt'
   }
   s.documentation_url = 'https://wiki.videolan.org/VLCKit/'
   s.platform  = :ios
-  s.authors   = 'Pierre d\'Herbemont', { 'Felix Paul Kühne' => 'fkuehne@videolan.org' }
+  s.authors   = { 'Kamcord' => 'support@kamcord.com' }
   s.source    = {
-    :http => 'http://download.videolan.org/pub/cocoapods/MobileVLCKit-2.2.2.zip'
+    :http => "https://github.com/kamcord/VLCKit/releases/download/2.2.2-metadata/MobileVLCKit-2.2.2.zip"
   }
-  s.ios.vendored_framework = 'MobileVLCKit-binary/MobileVLCKit.framework'
-  s.public_header_files = 'MobileVLCKit-binary/MobileVLCKit.framework/Headers/*.h'
-  s.ios.deployment_target = '5.1.1'
+  s.ios.vendored_frameworks = 'MobileVLCKit-binary/MobileVLCKit.framework'
+  s.ios.deployment_target = '8.0'
   s.frameworks = 'QuartzCore', 'CoreText', 'AVFoundation', 'Security', 'CFNetwork', 'AudioToolbox', 'OpenGLES', 'CoreGraphics'
-  s.libraries = 'stdc++', 'xml2', 'z', 'bz2', 'iconv'
+  s.libraries = 'stdc++', 'stdc++.6', 'xml2', 'z', 'bz2', 'iconv'
   s.requires_arc = false
   s.xcconfig = {
     'CLANG_CXX_LANGUAGE_STANDARD' => 'c++11',
