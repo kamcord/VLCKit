@@ -1,0 +1,488 @@
+From 84ffd1a2193b00cd48d7fe343a45104be6a96835 Mon Sep 17 00:00:00 2001
+From: Jonathan Wolk <jon@kamcord.com>
+Date: Wed, 18 May 2016 16:38:38 -0700
+Subject: [PATCH] jwolk metadata
+
+---
+ include/vlc/libvlc_events.h    |  1 +
+ include/vlc/libvlc_media.h     | 39 +++++++++++++++++++++
+ include/vlc_events.h           |  1 +
+ include/vlc_input.h            |  2 ++
+ include/vlc_input_item.h       |  3 ++
+ lib/event.c                    |  1 +
+ lib/libvlc.sym                 |  3 ++
+ lib/media.c                    | 46 ++++++++++++++++++++++++
+ modules/demux/avformat/demux.c | 79 +++++++++++++++++++++++++++---------------
+ src/input/es_out.c             |  1 +
+ src/input/event.c              | 12 +++++++
+ src/input/event.h              |  1 +
+ src/input/item.c               | 52 +++++++++++++++++++++++++++
+ src/libvlccore.sym             |  3 ++
+ 14 files changed, 216 insertions(+), 28 deletions(-)
+
+diff --git a/include/vlc/libvlc_events.h b/include/vlc/libvlc_events.h
+index 7b29cd3..c5ebd9c 100644
+--- a/include/vlc/libvlc_events.h
++++ b/include/vlc/libvlc_events.h
+@@ -53,6 +53,7 @@ enum libvlc_event_e {
+     libvlc_MediaFreed,
+     libvlc_MediaStateChanged,
+     libvlc_MediaSubItemTreeAdded,
++    libvlc_MediaMetaExtrasChanged,
+ 
+     libvlc_MediaPlayerMediaChanged=0x100,
+     libvlc_MediaPlayerNothingSpecial,
+diff --git a/include/vlc/libvlc_media.h b/include/vlc/libvlc_media.h
+index 948230a..ba75976 100644
+--- a/include/vlc/libvlc_media.h
++++ b/include/vlc/libvlc_media.h
+@@ -418,6 +418,45 @@ LIBVLC_API void libvlc_media_set_meta( libvlc_media_t *p_md,
+  */
+ LIBVLC_API int libvlc_media_save_meta( libvlc_media_t *p_md );
+ 
++/**
++ * Read the "extra" meta of the media. Creates a copy which should be
++ * freed when no longer needed.
++ *
++ * If the media has not yet been parsed this will return NULL.
++ *
++ * \see libvlc_media_parse
++ * \see libvlc_media_parse_async
++ * \see libvlc_MediaMetaChanged
++ *
++ * \param p_md the media descriptor
++ * \param e_meta the meta to read
++ * \return the media's "extra" meta
++ */
++LIBVLC_API const char * libvlc_media_get_meta_extra( libvlc_media_t *p_md, const char *psz_name );
++
++/**
++ * Return the count of "extra" in the meta of the media.
++ *
++ * If the media has not yet been parsed this will return 0.
++ *
++ * \see libvlc_media_parse
++ * \see libvlc_media_parse_async
++ * \see libvlc_MediaMetaChanged
++ *
++ * \param p_md the media descriptor
++ * \param e_meta the meta to read
++ * \return the media's meta
++ */
++LIBVLC_API unsigned libvlc_media_get_meta_extra_count( libvlc_media_t *p_md );
++
++
++/**
++ * Allocate a copy of all extra meta names and a table with it.
++ * Be sure to free both the returned pointers and its name.
++ */
++LIBVLC_API char** libvlc_media_copy_meta_extra_names( libvlc_media_t *p_md );
++
++
+ 
+ /**
+  * Get current state of media descriptor object. Possible media states
+diff --git a/include/vlc_events.h b/include/vlc_events.h
+index c342510..e39eb10 100644
+--- a/include/vlc_events.h
++++ b/include/vlc_events.h
+@@ -116,6 +116,7 @@ typedef enum vlc_event_type_t {
+ 
+     /* Input item events */
+     vlc_InputItemMetaChanged,
++    vlc_InputItemMetaExtrasChanged,
+     vlc_InputItemSubItemAdded,
+     vlc_InputItemSubItemTreeAdded,
+     vlc_InputItemDurationChanged,
+diff --git a/include/vlc_input.h b/include/vlc_input.h
+index 13a944a..72bff84 100644
+--- a/include/vlc_input.h
++++ b/include/vlc_input.h
+@@ -398,6 +398,8 @@ typedef enum input_event_type_e
+     /* A vout_thread_t object has been created/deleted by *the input* */
+     INPUT_EVENT_VOUT,
+ 
++    INPUT_EVENT_ITEM_META_EXTRAS,
++
+ } input_event_type_e;
+ 
+ /**
+diff --git a/include/vlc_input_item.h b/include/vlc_input_item.h
+index f4eb4bb..b7915c8 100644
+--- a/include/vlc_input_item.h
++++ b/include/vlc_input_item.h
+@@ -191,6 +191,9 @@ VLC_API bool input_item_HasErrorWhenReading( input_item_t * );
+ VLC_API void input_item_SetMeta( input_item_t *, vlc_meta_type_t meta_type, const char *psz_val );
+ VLC_API bool input_item_MetaMatch( input_item_t *p_i, vlc_meta_type_t meta_type, const char *psz );
+ VLC_API char * input_item_GetMeta( input_item_t *p_i, vlc_meta_type_t meta_type ) VLC_USED;
++VLC_API const char * input_item_GetMetaExtra( input_item_t *p_i, const char *psz ) VLC_USED;
++VLC_API unsigned input_item_GetMetaExtraCount( input_item_t *p_i) VLC_USED;
++VLC_API char ** input_item_CopyMetaExtraNames( input_item_t *p_i) VLC_USED;
+ VLC_API char * input_item_GetName( input_item_t * p_i ) VLC_USED;
+ VLC_API char * input_item_GetTitleFbName( input_item_t * p_i ) VLC_USED;
+ VLC_API char * input_item_GetURI( input_item_t * p_i ) VLC_USED;
+diff --git a/lib/event.c b/lib/event.c
+index ad3a3b8..24aa8d5 100644
+--- a/lib/event.c
++++ b/lib/event.c
+@@ -260,6 +260,7 @@ static const event_name_t event_list[] = {
+     DEF(MediaFreed)
+     DEF(MediaStateChanged)
+     DEF(MediaSubItemTreeAdded)
++    DEF(MediaMetaExtrasChanged)
+ 
+     DEF(MediaPlayerMediaChanged)
+     DEF(MediaPlayerNothingSpecial)
+diff --git a/lib/libvlc.sym b/lib/libvlc.sym
+index 7810ed7..ecbb954 100644
+--- a/lib/libvlc.sym
++++ b/lib/libvlc.sym
+@@ -72,6 +72,7 @@ libvlc_log_iterator_next
+ libvlc_log_open
+ libvlc_media_add_option
+ libvlc_media_add_option_flag
++libvlc_media_copy_meta_extra_names
+ libvlc_media_discoverer_event_manager
+ libvlc_media_discoverer_is_running
+ libvlc_media_discoverer_localized_name
+@@ -82,6 +83,8 @@ libvlc_media_duplicate
+ libvlc_media_event_manager
+ libvlc_media_get_duration
+ libvlc_media_get_meta
++libvlc_media_get_meta_extra
++libvlc_media_get_meta_extra_count
+ libvlc_media_get_mrl
+ libvlc_media_get_state
+ libvlc_media_get_stats
+diff --git a/lib/media.c b/lib/media.c
+index 18d6e6d..1f9855c 100644
+--- a/lib/media.c
++++ b/lib/media.c
+@@ -169,6 +169,22 @@ static void input_item_meta_changed( const vlc_event_t *p_event,
+ }
+ 
+ /**************************************************************************
++ * input_item_meta_extras_changed (Private) (vlc event Callback)
++ **************************************************************************/
++static void input_item_meta_extras_changed( const vlc_event_t *p_event,
++                                            void * user_data )
++{
++    libvlc_media_t * p_md = user_data;
++    libvlc_event_t event;
++
++    /* Construct the event */
++    event.type = libvlc_MediaMetaExtrasChanged;
++
++    /* Send the event */
++    libvlc_event_send( p_md->p_event_manager, &event );
++}
++
++/**************************************************************************
+  * input_item_duration_changed (Private) (vlc event Callback)
+  **************************************************************************/
+ static void input_item_duration_changed( const vlc_event_t *p_event,
+@@ -229,6 +245,11 @@ static void install_input_item_observer( libvlc_media_t *p_md )
+                       input_item_duration_changed,
+                       p_md );
+     vlc_event_attach( &p_md->p_input_item->event_manager,
++                      vlc_InputItemMetaExtrasChanged,
++                      input_item_meta_extras_changed,
++                      p_md );
++
++    vlc_event_attach( &p_md->p_input_item->event_manager,
+                       vlc_InputItemPreparsedChanged,
+                       input_item_preparsed_changed,
+                       p_md );
+@@ -252,6 +273,10 @@ static void uninstall_input_item_observer( libvlc_media_t *p_md )
+                       input_item_meta_changed,
+                       p_md );
+     vlc_event_detach( &p_md->p_input_item->event_manager,
++                      vlc_InputItemMetaExtrasChanged,
++                      input_item_meta_extras_changed,
++                      p_md );
++    vlc_event_detach( &p_md->p_input_item->event_manager,
+                       vlc_InputItemDurationChanged,
+                       input_item_duration_changed,
+                       p_md );
+@@ -311,6 +336,7 @@ libvlc_media_t * libvlc_media_new_from_input_item(
+ 
+     libvlc_event_manager_t *em = p_md->p_event_manager;
+     libvlc_event_manager_register_event_type(em, libvlc_MediaMetaChanged);
++    libvlc_event_manager_register_event_type(em, libvlc_MediaMetaExtrasChanged);
+     libvlc_event_manager_register_event_type(em, libvlc_MediaSubItemAdded);
+     libvlc_event_manager_register_event_type(em, libvlc_MediaFreed);
+     libvlc_event_manager_register_event_type(em, libvlc_MediaDurationChanged);
+@@ -531,6 +557,26 @@ int libvlc_media_save_meta( libvlc_media_t *p_md )
+ }
+ 
+ /**************************************************************************
++ * Getter for "extra" meta information
++ **************************************************************************/
++
++const char * libvlc_media_get_meta_extra( libvlc_media_t *p_md, const char *psz_name )
++{
++    return input_item_GetMetaExtra( p_md->p_input_item, psz_name );
++}
++
++unsigned libvlc_media_get_meta_extra_count( libvlc_media_t *p_md )
++{
++    return input_item_GetMetaExtraCount( p_md->p_input_item );
++}
++
++
++char** libvlc_media_copy_meta_extra_names( libvlc_media_t *p_md )
++{
++    return input_item_CopyMetaExtraNames( p_md->p_input_item );
++}
++
++/**************************************************************************
+  * Getter for state information
+  * Can be error, playing, buffering, NothingSpecial.
+  **************************************************************************/
+diff --git a/modules/demux/avformat/demux.c b/modules/demux/avformat/demux.c
+index a99bdfa..f68ad87 100644
+--- a/modules/demux/avformat/demux.c
++++ b/modules/demux/avformat/demux.c
+@@ -833,6 +833,12 @@ static int Demux( demux_t *p_demux )
+         UpdateSeekPoint( p_demux, p_sys->i_pcr );
+     }
+ 
++    /* Update metadata */
++    if( p_sys->ic->event_flags & AVFMT_EVENT_FLAG_METADATA_UPDATED ) {
++        p_demux->info.i_update |= INPUT_UPDATE_META;
++        p_sys->ic->event_flags &= ~AVFMT_EVENT_FLAG_METADATA_UPDATED;
++    }
++
+     if( p_sys->tk[pkt.stream_index] != NULL )
+         es_out_Send( p_demux->out, p_sys->tk[pkt.stream_index], p_frame );
+     else
+@@ -918,6 +924,50 @@ static block_t *BuildSsaFrame( const AVPacket *p_pkt, unsigned i_order )
+     return p_frame;
+ }
+ 
++static void AVMetaToVLCMeta( AVDictionary *p_dict, vlc_meta_t *p_meta )
++{
++    static const char names[][10] = {
++        [vlc_meta_Title] = "title",
++        [vlc_meta_Artist] = "artist",
++        [vlc_meta_Genre] = "genre",
++        [vlc_meta_Copyright] = "copyright",
++        [vlc_meta_Album] = "album",
++        //[vlc_meta_TrackNumber] -- TODO: parse number/total value
++        [vlc_meta_Description] = "comment",
++        //[vlc_meta_Rating]
++        [vlc_meta_Date] = "date",
++        [vlc_meta_Setting] = "encoder",
++        //[vlc_meta_URL]
++        [vlc_meta_Language] = "language",
++        //[vlc_meta_NowPlaying]
++        [vlc_meta_Publisher] = "publisher",
++        [vlc_meta_EncodedBy] = "encoded_by",
++        //[vlc_meta_ArtworkURL]
++        //[vlc_meta_TrackID]
++        //[vlc_meta_TrackTotal]
++    };
++
++    /* Loop over all metadata entries in the dictionary */
++    AVDictionaryEntry *p_en = NULL;
++    while ((p_en = av_dict_get(p_dict, "", p_en, AV_DICT_IGNORE_SUFFIX))) {
++        if( p_en != NULL && p_en->value != NULL && IsUTF8(p_en->value) ) {
++            /* TODO*: Constant time lookup instead of linear */
++            for( unsigned i = 0; i < sizeof(names) / sizeof(*names); i++)
++            {
++                if( !names[i][0] )
++                    continue;
++
++                /* Add metadata, putting 'extra' metadata that isn't in the predefined list */
++                if( !strcmp( names[i], p_en->key ) )
++                    vlc_meta_Set( p_meta, i, p_en->value );
++                else
++                    vlc_meta_AddExtra( p_meta, p_en->key, p_en->value );
++            }
++        }
++    }
++}
++
++
+ /*****************************************************************************
+  * Control:
+  *****************************************************************************/
+@@ -1010,38 +1060,11 @@ static int Control( demux_t *p_demux, int i_query, va_list args )
+ 
+         case DEMUX_GET_META:
+         {
+-            static const char names[][10] = {
+-                [vlc_meta_Title] = "title",
+-                [vlc_meta_Artist] = "artist",
+-                [vlc_meta_Genre] = "genre",
+-                [vlc_meta_Copyright] = "copyright",
+-                [vlc_meta_Album] = "album",
+-                //[vlc_meta_TrackNumber] -- TODO: parse number/total value
+-                [vlc_meta_Description] = "comment",
+-                //[vlc_meta_Rating]
+-                [vlc_meta_Date] = "date",
+-                [vlc_meta_Setting] = "encoder",
+-                //[vlc_meta_URL]
+-                [vlc_meta_Language] = "language",
+-                //[vlc_meta_NowPlaying]
+-                [vlc_meta_Publisher] = "publisher",
+-                [vlc_meta_EncodedBy] = "encoded_by",
+-                //[vlc_meta_ArtworkURL]
+-                //[vlc_meta_TrackID]
+-                //[vlc_meta_TrackTotal]
+-            };
+             vlc_meta_t *p_meta = va_arg( args, vlc_meta_t * );
+             AVDictionary *dict = p_sys->ic->metadata;
+ 
+-            for( unsigned i = 0; i < sizeof(names) / sizeof(*names); i++)
+-            {
+-                if( !names[i][0] )
+-                    continue;
++            AVMetaToVLCMeta( dict, p_meta );
+ 
+-                AVDictionaryEntry *e = av_dict_get( dict, names[i], NULL, 0 );
+-                if( e != NULL && e->value != NULL && IsUTF8(e->value) )
+-                    vlc_meta_Set( p_meta, i, e->value );
+-            }
+             return VLC_SUCCESS;
+         }
+ 
+diff --git a/src/input/es_out.c b/src/input/es_out.c
+index b2b0988..0e8c5ce 100644
+--- a/src/input/es_out.c
++++ b/src/input/es_out.c
+@@ -1393,6 +1393,7 @@ static void EsOutMeta( es_out_t *p_out, const vlc_meta_t *p_meta )
+     input_item_SetPreparsed( p_item, true );
+ 
+     input_SendEventMeta( p_input );
++    input_SendEventMetaExtras( p_input );
+     /* TODO handle sout meta ? */
+ }
+ 
+diff --git a/src/input/event.c b/src/input/event.c
+index 453e04b..24bebc6 100644
+--- a/src/input/event.c
++++ b/src/input/event.c
+@@ -210,6 +210,18 @@ void input_SendEventMeta( input_thread_t *p_input )
+     vlc_event_send( &p_input->p->p_item->event_manager, &event );
+ }
+ 
++void input_SendEventMetaExtras( input_thread_t *p_input )
++{
++    Trigger( p_input, INPUT_EVENT_ITEM_META_EXTRAS );
++
++    /* FIXME remove this ugliness ? */
++    vlc_event_t event;
++
++    event.type = vlc_InputItemMetaExtrasChanged;
++    vlc_event_send( &p_input->p->p_item->event_manager, &event );
++}
++
++
+ void input_SendEventMetaInfo( input_thread_t *p_input )
+ {
+     Trigger( p_input, INPUT_EVENT_ITEM_INFO );
+diff --git a/src/input/event.h b/src/input/event.h
+index c8f1071..de0a2e6 100644
+--- a/src/input/event.h
++++ b/src/input/event.h
+@@ -46,6 +46,7 @@ void input_SendEventCache( input_thread_t *p_input, double f_level );
+ 
+ /* TODO rename Item* */
+ void input_SendEventMeta( input_thread_t *p_input );
++void input_SendEventMetaExtras( input_thread_t *p_input );
+ void input_SendEventMetaInfo( input_thread_t *p_input );
+ void input_SendEventMetaName( input_thread_t *p_input, const char *psz_name );
+ void input_SendEventMetaEpg( input_thread_t *p_input );
+diff --git a/src/input/item.c b/src/input/item.c
+index b27250b..4721ab4 100644
+--- a/src/input/item.c
++++ b/src/input/item.c
+@@ -234,6 +234,57 @@ char *input_item_GetMeta( input_item_t *p_i, vlc_meta_type_t meta_type )
+     return psz;
+ }
+ 
++const char *input_item_GetMetaExtra( input_item_t *p_i, const char *psz )
++{
++    vlc_mutex_lock( &p_i->lock );
++
++    if( !p_i->p_meta )
++    {
++        vlc_mutex_unlock( &p_i->lock );
++        return NULL;
++    }
++
++    char *psz_val = NULL;
++    if( vlc_meta_GetExtra( p_i->p_meta, psz ) )
++        psz_val = strdup( vlc_meta_GetExtra( p_i->p_meta, psz ) );
++
++    vlc_mutex_unlock( &p_i->lock );
++    return psz_val;
++}
++
++unsigned input_item_GetMetaExtraCount( input_item_t *p_i)
++{
++    vlc_mutex_lock( &p_i->lock );
++
++    if( !p_i->p_meta )
++    {
++        vlc_mutex_unlock( &p_i->lock );
++        return 0;
++    }
++
++    unsigned count = vlc_meta_GetExtraCount( p_i->p_meta );
++    vlc_mutex_unlock( &p_i->lock);
++
++    return count;
++}
++
++char ** input_item_CopyMetaExtraNames( input_item_t *p_i)
++{
++    vlc_mutex_lock( &p_i->lock );
++
++    if( !p_i->p_meta )
++    {
++        vlc_mutex_unlock( &p_i->lock );
++        return NULL;
++    }
++
++    char ** names = NULL;
++    names = vlc_meta_CopyExtraNames( p_i->p_meta );
++
++    vlc_mutex_unlock( &p_i->lock );
++    return names;
++}
++
+ /* Get the title of a given item or fallback to the name if the title is empty */
+ char *input_item_GetTitleFbName( input_item_t *p_item )
+ {
+@@ -857,6 +908,7 @@ input_item_NewWithType( const char *psz_uri, const char *psz_name,
+ 
+     vlc_event_manager_init( p_em, p_input );
+     vlc_event_manager_register_event_type( p_em, vlc_InputItemMetaChanged );
++    vlc_event_manager_register_event_type( p_em, vlc_InputItemMetaExtrasChanged );
+     vlc_event_manager_register_event_type( p_em, vlc_InputItemSubItemAdded );
+     vlc_event_manager_register_event_type( p_em, vlc_InputItemSubItemTreeAdded );
+     vlc_event_manager_register_event_type( p_em, vlc_InputItemDurationChanged );
+diff --git a/src/libvlccore.sym b/src/libvlccore.sym
+index e583c21..13408b6 100644
+--- a/src/libvlccore.sym
++++ b/src/libvlccore.sym
+@@ -183,11 +183,14 @@ input_GetItem
+ input_item_AddInfo
+ input_item_AddOption
+ input_item_Copy
++input_item_CopyMetaExtraNames
+ input_item_CopyOptions
+ input_item_DelInfo
+ input_item_GetDuration
+ input_item_GetInfo
+ input_item_GetMeta
++input_item_GetMetaExtra
++input_item_GetMetaExtraCount
+ input_item_GetName
+ input_item_GetTitleFbName
+ input_item_GetURI
+-- 
+2.7.4 (Apple Git-66)
+

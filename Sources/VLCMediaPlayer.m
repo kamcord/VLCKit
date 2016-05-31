@@ -1212,8 +1212,10 @@ static void HandleMediaPlayerMediaChanged(const libvlc_event_t * event, void * s
 - (void)mediaPlayerMediaChanged:(VLCMedia *)newMedia
 {
     [self willChangeValueForKey:@"media"];
-    if (_media != newMedia)
-        _media = newMedia;
+    if (_media != newMedia) {
+        if ( !_media || [_media compare:newMedia] != NSOrderedSame)
+            _media = newMedia;
+    }
 
     [self didChangeValueForKey:@"media"];
 }
